@@ -10,6 +10,18 @@ This is all it does - you give a polling function and get back a future which co
 
 Backed by Akka, no blocking obviously.
 
+
+# Usage
+
+Package is available at [Bintray](https://bintray.com/zamblauskas/maven/scala-poller).
+Check the latest version and add to your `build.sbt`:
+```
+resolvers += Resolver.bintrayRepo("zamblauskas", "maven")
+
+libraryDependencies += "zamblauskas" %% "scala-poller" % "<latest_version>"
+```
+
+
 # Example
 
 ```scala
