@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/zamblauskas/scala-poller.svg?branch=master)](https://travis-ci.org/zamblauskas/scala-poller)
+[![Bintray Download](https://api.bintray.com/packages/zamblauskas/maven/scala-poller/images/download.svg)](https://bintray.com/zamblauskas/maven/scala-poller/_latestVersion)
 
 
 # About
