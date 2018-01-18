@@ -6,7 +6,7 @@ This is all it does - you give a polling function and get back a future which co
 
 Backed by Akka, no blocking obviously.
 
-#Example
+# Example
 
 ```scala
   import java.util.concurrent.TimeUnit.{MINUTES, SECONDS}
