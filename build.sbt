@@ -7,3 +7,5 @@ libraryDependencies ++= Seq(
   "org.scalatest"     %% "scalatest"    % "3.0.4"  % Test,
   "com.typesafe.akka" %% "akka-testkit" % "2.5.9"  % Test
 )
+
+licenses := ("MIT", url("https://opensource.org/licenses/MIT")) :: Nil
