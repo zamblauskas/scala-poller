@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/zamblauskas/scala-poller.svg?branch=master)](https://travis-ci.org/zamblauskas/scala-poller)
+
+
 # About
 
 Every now and then I come across a task where I have to submit some job to a 3rd party service and then await for completion by periodically polling job status.
