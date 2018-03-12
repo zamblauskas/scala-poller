@@ -1,5 +1,7 @@
 package zamblauskas.poller
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorSystem, Props}
 import zamblauskas.poller.AkkaPoller.Worker
 import zamblauskas.poller.Poller.TimeoutException
@@ -15,7 +17,7 @@ class AkkaPoller(implicit system: ActorSystem) extends Poller {
     f: () => Future[Option[Either[L, R]]]
   ): Future[Either[L, R]] = {
     val promise = Promise[Either[L, R]]()
-    system.actorOf(Props(new Worker(interval, timeout, f, promise)), "poller")
+    system.actorOf(Props(new Worker(interval, timeout, f, promise)), s"poller-${UUID.randomUUID().toString}")
     promise.future
   }
 }
