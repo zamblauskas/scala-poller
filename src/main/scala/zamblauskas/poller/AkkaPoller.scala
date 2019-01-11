@@ -11,24 +11,26 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
 class AkkaPoller(implicit system: ActorSystem) extends Poller {
-  override def poll[L, R](
+  override def poll[T](
+    name: String,
     interval: FiniteDuration,
     timeout: FiniteDuration,
-    f: () => Future[Option[Either[L, R]]]
-  ): Future[Either[L, R]] = {
-    val promise = Promise[Either[L, R]]()
-    system.actorOf(Props(new Worker(interval, timeout, f, promise)), s"poller-${UUID.randomUUID().toString}")
+    f: () => Future[Option[T]]
+  ): Future[T] = {
+    val promise = Promise[T]()
+    system.actorOf(Props(new Worker(name, interval, timeout, f, promise)), s"poller-${UUID.randomUUID().toString}")
     promise.future
   }
 }
 
 object AkkaPoller {
 
-  private class Worker[L, R](
+  private class Worker[T](
+    name: String,
     interval: FiniteDuration,
     timeout: FiniteDuration,
-    poll: () => Future[Option[Either[L, R]]],
-    promise: Promise[Either[L, R]]
+    poll: () => Future[Option[T]],
+    promise: Promise[T]
   ) extends Actor {
 
     private implicit val ec: ExecutionContext = context.dispatcher
@@ -46,7 +48,7 @@ object AkkaPoller {
     private case object Poll
     private case object Timeout
     private case object Schedule
-    private case class Complete(value: Either[L, R])
+    private case class Complete(value: T)
     private case class Fail(t: Throwable)
 
     override def receive: Receive = {
@@ -68,7 +70,7 @@ object AkkaPoller {
         ))
 
       case Timeout =>
-        promise.failure(new TimeoutException(s"$timeout has passed, yet no result - giving up"))
+        promise.failure(new TimeoutException(s"$name did not complete within $timeout"))
         stop()
 
       case Complete(v) =>

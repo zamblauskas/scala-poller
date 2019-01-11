@@ -4,17 +4,14 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 trait Poller {
-
-  def poll[Err, Val](
+  def poll[T](
+    name: String,
     interval: FiniteDuration,
     timeout: FiniteDuration,
-    f: () => Future[Option[Either[Err, Val]]]
-  ): Future[Either[Err, Val]]
-
+    f: () => Future[Option[T]]
+  ): Future[T]
 }
 
 object Poller {
-
   class TimeoutException(msg: String) extends Exception(msg)
-
 }

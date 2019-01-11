@@ -10,9 +10,9 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Minutes, Span}
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class AkkaPollerSpec
   extends TestKit(ActorSystem("AkkaPollerSpec"))
@@ -29,10 +29,7 @@ class AkkaPollerSpec
 
   private val poller = new AkkaPoller()
 
-  private case object Err
-  private case object Val
-
-  private type Result = Either[Err.type, Val.type]
+  type Result = String
 
   private def mutablePoll(results: Stream[Future[Option[Result]]]): () => Future[Option[Result]] = new Function0[Future[Option[Result]]] {
     private var internal = results
@@ -52,36 +49,21 @@ class AkkaPollerSpec
 
   describe("AkkaPoller") {
 
-    it("should return right value") {
+    it("should return value") {
       val poll = mutablePoll(Stream(
         Future.successful(None),
         Future.successful(None),
-        Future.successful(Some(Right(Val)))
+        Future.successful(Some("result"))
       ))
 
       val future = poller.poll(
+        name = "test",
         interval = FiniteDuration(1, SECONDS),
         timeout = FiniteDuration(1, MINUTES),
         poll
       )
 
-      whenReady(future, testTimeout) { _ should === (Right(Val)) }
-    }
-
-    it("should return left value") {
-      val poll = mutablePoll(Stream(
-        Future.successful(None),
-        Future.successful(None),
-        Future.successful(Some(Left(Err)))
-      ))
-
-      val future = poller.poll(
-        interval = FiniteDuration(1, SECONDS),
-        timeout = FiniteDuration(1, MINUTES),
-        poll
-      )
-
-      whenReady(future, testTimeout) { _ should === (Left(Err)) }
+      whenReady(future, testTimeout) { _ should === ("result") }
     }
 
     it("should return exception") {
@@ -94,6 +76,7 @@ class AkkaPollerSpec
       ))
 
       val future = poller.poll(
+        name = "test",
         interval = FiniteDuration(1, SECONDS),
         timeout = FiniteDuration(1, MINUTES),
         poll
@@ -107,6 +90,7 @@ class AkkaPollerSpec
     val poll = mutablePoll(Stream.continually(Future.successful(None)))
 
     val future = poller.poll(
+      name = "test",
       interval = FiniteDuration(1, SECONDS),
       timeout = FiniteDuration(10, SECONDS),
       poll
@@ -119,17 +103,18 @@ class AkkaPollerSpec
     val poll = mutablePoll(Stream(
       Future {
         Thread.sleep(5000)
-        Some(Right(Val))
+        Some("result 1")
       },
-      Future.successful(Some(Left(Err)))
+      Future.successful(Some("result 2"))
     ))
 
     val future = poller.poll(
+      name = "test",
       interval = FiniteDuration(1, SECONDS),
       timeout = FiniteDuration(10, SECONDS),
       poll
     )
 
-    whenReady(future, testTimeout) { _ should === (Right(Val)) }
+    whenReady(future, testTimeout) { _ should === ("result 1") }
   }
 }

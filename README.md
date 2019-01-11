@@ -49,6 +49,7 @@ libraryDependencies += "zamblauskas" %% "scala-poller" % "<latest_version>"
 
   // await for the completion
   val done: Future[Either[String, Unit]] = poller.poll(
+    name = "status of 3rd party api",
     interval = FiniteDuration(5, SECONDS),
     timeout = FiniteDuration(2, MINUTES),
     () => {
