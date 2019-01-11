@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorSystem, Props}
 import zamblauskas.poller.AkkaPoller.Worker
 import zamblauskas.poller.Poller.TimeoutException
 
-import scala.concurrent.duration.{FiniteDuration, SECONDS}
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
@@ -33,18 +33,13 @@ object AkkaPoller {
 
     private implicit val ec: ExecutionContext = context.dispatcher
 
-    private val pollCancellable = context.system.scheduler.schedule(
-      initialDelay = FiniteDuration(0, SECONDS),
-      interval,
-      self,
-      Poll
-    )
-
     private val timeoutCancellable = context.system.scheduler.scheduleOnce(
       timeout,
       self,
       Timeout
     )
+
+    scheduleNextPoll()
 
     private case object Poll
     private case object Timeout
@@ -57,7 +52,7 @@ object AkkaPoller {
           case Failure(f) =>
             self ! Fail(f)
           case Success(None) =>
-            // do nothing
+            scheduleNextPoll()
           case Success(Some(v)) =>
             self ! Complete(v)
         }
@@ -75,8 +70,15 @@ object AkkaPoller {
         stop()
     }
 
+    private def scheduleNextPoll(): Unit = {
+      context.system.scheduler.scheduleOnce(
+        interval,
+        self,
+        Poll
+      )
+    }
+
     private def stop(): Unit = {
-      pollCancellable.cancel()
       timeoutCancellable.cancel()
       context.stop(self)
     }
