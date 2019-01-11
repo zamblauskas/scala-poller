@@ -12,6 +12,7 @@ import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class AkkaPollerSpec
   extends TestKit(ActorSystem("AkkaPollerSpec"))
@@ -33,7 +34,7 @@ class AkkaPollerSpec
 
   private type Result = Either[Err.type, Val.type]
 
-  private def mutablePoll(results: Stream[Future[Option[Result]]]) = new Function0[Future[Option[Result]]] {
+  private def mutablePoll(results: Stream[Future[Option[Result]]]): () => Future[Option[Result]] = new Function0[Future[Option[Result]]] {
     private var internal = results
 
     override def apply(): Future[Option[Result]] = {
@@ -112,5 +113,23 @@ class AkkaPollerSpec
     )
 
     whenReady(future.failed, testTimeout) { _ shouldBe a[Poller.TimeoutException] }
+  }
+
+  it("should not overlap") {
+    val poll = mutablePoll(Stream(
+      Future {
+        Thread.sleep(5000)
+        Some(Right(Val))
+      },
+      Future.successful(Some(Left(Err)))
+    ))
+
+    val future = poller.poll(
+      interval = FiniteDuration(1, SECONDS),
+      timeout = FiniteDuration(10, SECONDS),
+      poll
+    )
+
+    whenReady(future, testTimeout) { _ should === (Right(Val)) }
   }
 }

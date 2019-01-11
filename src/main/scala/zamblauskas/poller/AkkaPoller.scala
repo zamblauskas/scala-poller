@@ -2,7 +2,7 @@ package zamblauskas.poller
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorSystem, Props}
+import akka.actor.{Actor, ActorSystem, Cancellable, Props}
 import zamblauskas.poller.AkkaPoller.Worker
 import zamblauskas.poller.Poller.TimeoutException
 
@@ -33,16 +33,19 @@ object AkkaPoller {
 
     private implicit val ec: ExecutionContext = context.dispatcher
 
+    private var scheduleCancellable = Option.empty[Cancellable]
+
     private val timeoutCancellable = context.system.scheduler.scheduleOnce(
       timeout,
       self,
       Timeout
     )
 
-    scheduleNextPoll()
+    self ! Schedule
 
     private case object Poll
     private case object Timeout
+    private case object Schedule
     private case class Complete(value: Either[L, R])
     private case class Fail(t: Throwable)
 
@@ -52,10 +55,17 @@ object AkkaPoller {
           case Failure(f) =>
             self ! Fail(f)
           case Success(None) =>
-            scheduleNextPoll()
+            self ! Schedule
           case Success(Some(v)) =>
             self ! Complete(v)
         }
+
+      case Schedule =>
+        scheduleCancellable = Some(context.system.scheduler.scheduleOnce(
+          interval,
+          self,
+          Poll
+        ))
 
       case Timeout =>
         promise.failure(new TimeoutException(s"$timeout has passed, yet no result - giving up"))
@@ -70,15 +80,8 @@ object AkkaPoller {
         stop()
     }
 
-    private def scheduleNextPoll(): Unit = {
-      context.system.scheduler.scheduleOnce(
-        interval,
-        self,
-        Poll
-      )
-    }
-
     private def stop(): Unit = {
+      scheduleCancellable.foreach(_.cancel())
       timeoutCancellable.cancel()
       context.stop(self)
     }
