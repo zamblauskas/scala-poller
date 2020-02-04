@@ -5,18 +5,20 @@ import java.util.concurrent.TimeUnit.{MINUTES, SECONDS}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.funspec.AnyFunSpecLike
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Minutes, Span}
-import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class AkkaPollerSpec
   extends TestKit(ActorSystem("AkkaPollerSpec"))
-    with FunSpecLike
+    with AnyFunSpecLike
     with Matchers
     with TypeCheckedTripleEquals
     with ScalaFutures
